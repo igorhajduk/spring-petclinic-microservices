@@ -15,8 +15,9 @@
     </parent>
 
     <properties>
-        <docker.exposed.port>8081</docker.exposed.port>
-        <docker.image.dockerfile.dir>${basedir}/../docker</docker.image.dockerfile.dir>
+        <spring-boot.build-image.imageName>${docker.image.prefix}/${project.artifactId}:${project.version}</spring-boot.build-image.imageName>    
+        <!-- <docker.exposed.port>8081</docker.exposed.port>
+        <docker.image.dockerfile.dir>${basedir}/../docker</docker.image.dockerfile.dir> -->
     </properties>
 
 	<dependencies>
@@ -108,7 +109,7 @@
 	</dependencies>
 
     <profiles>
-        <profile>
+        <!-- <profile>
             <id>buildDocker</id>
                 <build>
                     <plugins>
@@ -119,6 +120,6 @@
                         </plugin>
                     </plugins>
                 </build>
-        </profile>
+        </profile> -->
     </profiles>
 </project>
