@@ -1,26 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
+    <!-- Use Spring's default property to detect active profile -->
+    <springProperty scope="context" name="springProfile" source="spring.profiles.active"/>
 
-    <include resource="org/springframework/boot/logging/logback/base.xml"/>
-    <jmxConfigurator/>
-
-    <springProfile name="!test">
-        <!-- <appender name="LOGSTASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
-            <destination>${LOGSTASH_HOST}:${LOGSTASH_PORT}</destination>
-            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-                <customFields>{"application_name":"my-spring-app"}</customFields>
-            </encoder>
-        </appender> -->
-        <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-            <encoder>
-                <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
-            </encoder>
-        </appender>        
-    </springProfile>
+    <!-- Send logs to console in JSON format -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <!-- Optional: Add custom fields to JSON output -->
+            <customFields>{"application_name":"your_application_name","environment":"${springProfile}"}</customFields>
+        </encoder>
+    </appender>
 
     <root level="INFO">
-        <appender-ref ref="CONSOLE"/> 
-        <appender-ref ref="LOGSTASH"/>
+        <appender-ref ref="STDOUT" />
     </root>
-
 </configuration>

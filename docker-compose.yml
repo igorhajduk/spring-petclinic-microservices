@@ -1,122 +1,162 @@
 version: '2'
 
 networks:
-  elk:
+  default:
     driver: bridge
+
+  logging:
+    driver: fluentd
+    options:
+      fluentd-address: localhost:24224
+      tag: config-server
 
 volumes:
   esdata:
     driver: local
 
 services:
-  pc-config-server:
+
+  ## Application layer
+
+  config-server:
     image: tc-demo/spring-petclinic-config-server
     container_name: config-server
     mem_limit: 512M
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - LOGSTASH_HOST=logstash
+      - LOGSTASH_PORT=5001    
+    networks:
+      - default    
     ports:
      - 8888:8888
-    environment:
-      - LOGSTASH_HOST=logstash
-      - LOGSTASH_PORT=5001
 
-  pc-discovery-server:
+  discovery-server:
     image: tc-demo/spring-petclinic-discovery-server
     container_name: discovery-server
     mem_limit: 512M
     depends_on:
-      - pc-config-server
-    entrypoint: ["./dockerize","-wait=tcp://config-server:8888","-timeout=60s","--","java", "org.springframework.boot.loader.JarLauncher"]
-    ports:
-     - 8761:8761
+      - config-server
+    # entrypoint: ["./dockerize","-wait=tcp://config-server:8888","-timeout=60s","--","java", "org.springframework.boot.loader.JarLauncher"]
     environment:
+      - SPRING_PROFILES_ACTIVE=docker
       - LOGSTASH_HOST=logstash
       - LOGSTASH_PORT=5001
+    networks:
+      - default    
+    ports:
+     - 8761:8761
 
-  pc-customers-service:
+  customers-service:
     image: tc-demo/spring-petclinic-customers-service
     container_name: customers-service
     mem_limit: 512M
     depends_on:
-     - pc-config-server
-     - pc-discovery-server
-    entrypoint: ["./dockerize","-wait=tcp://discovery-server:8761","-timeout=60s","--","java", "org.springframework.boot.loader.JarLauncher"]
-    ports:
-    - 8081:8081
+     - config-server
+     - discovery-server
+    # entrypoint: ["./dockerize","-wait=tcp://discovery-server:8761","-timeout=60s","--","java", "org.springframework.boot.loader.JarLauncher"]
     environment:
+      - SPRING_PROFILES_ACTIVE=docker,mysql
       - LOGSTASH_HOST=logstash
       - LOGSTASH_PORT=5001
+    networks:
+      - default
+    ports:
+    - 8081:8081
 
-  pc-visits-service:
+  visits-service:
     image: tc-demo/spring-petclinic-visits-service
     container_name: visits-service
     mem_limit: 512M
     depends_on:
-     - pc-config-server
-     - pc-discovery-server
-    entrypoint: ["./dockerize","-wait=tcp://discovery-server:8761","-timeout=60s","--","java", "org.springframework.boot.loader.JarLauncher"]
-    ports:
-     - 8082:8082
+     - config-server
+     - discovery-server
+     - mysql
+    # entrypoint: ["./dockerize","-wait=tcp://discovery-server:8761","-timeout=60s","--","java", "org.springframework.boot.loader.JarLauncher"]
     environment:
+      - SPRING_PROFILES_ACTIVE=docker,mysql
       - LOGSTASH_HOST=logstash
       - LOGSTASH_PORT=5001
+    networks:
+      - default    
+    ports:
+     - 8082:8082
 
-  pc-vets-service:
+  vets-service:
     image: tc-demo/spring-petclinic-vets-service
     container_name: vets-service
     mem_limit: 512M
     depends_on:
-     - pc-config-server
-     - pc-discovery-server
-    entrypoint: ["./dockerize","-wait=tcp://discovery-server:8761","-timeout=60s","--","java", "org.springframework.boot.loader.JarLauncher"]
-    ports:
-     - 8083:8083
+     - config-server
+     - discovery-server
+     - mysql
+    # entrypoint: ["./dockerize","-wait=tcp://discovery-server:8761","-timeout=60s","--","java", "org.springframework.boot.loader.JarLauncher"]
     environment:
+      - SPRING_PROFILES_ACTIVE=docker,mysql    
       - LOGSTASH_HOST=logstash
       - LOGSTASH_PORT=5001
+    networks:
+      - default
+    ports:
+     - 8083:8083
 
-  pc-api-gateway:
+  api-gateway:
     image: tc-demo/spring-petclinic-api-gateway
     container_name: api-gateway
     mem_limit: 512M
     depends_on:
-     - pc-config-server
-     - pc-discovery-server
-    entrypoint: ["./dockerize","-wait=tcp://discovery-server:8761","-timeout=60s","--","java", "org.springframework.boot.loader.JarLauncher"]
-    ports:
-     - 8080:8080
+     - config-server
+     - discovery-server
+    # entrypoint: ["./dockerize","-wait=tcp://discovery-server:8761","-timeout=60s","--","java", "org.springframework.boot.loader.JarLauncher"]
     environment:
+      - SPRING_PROFILES_ACTIVE=docker    
       - LOGSTASH_HOST=logstash
       - LOGSTASH_PORT=5001
-
-  tracing-server:
-    image: openzipkin/zipkin
-    container_name: tracing-server
-    mem_limit: 512M
-    environment:
-    - JAVA_OPTS=-XX:+UnlockExperimentalVMOptions -Djava.security.egd=file:/dev/./urandom
+    networks:
+      - default
     ports:
-     - 9411:9411
+     - 8080:8080
 
-  pc-admin-server:
+  admin-server:
     image: tc-demo/spring-petclinic-admin-server
     container_name: admin-server
     mem_limit: 512M
     depends_on:
-     - pc-config-server
-     - pc-discovery-server
-    entrypoint: ["./dockerize","-wait=tcp://discovery-server:8761","-timeout=60s","--","java", "org.springframework.boot.loader.JarLauncher"]
-    ports:
-     - 9090:9090
+     - config-server
+     - discovery-server
+    # entrypoint: ["./dockerize","-wait=tcp://discovery-server:8761","-timeout=60s","--","java", "org.springframework.boot.loader.JarLauncher"]
     environment:
+      - SPRING_PROFILES_ACTIVE=docker
       - LOGSTASH_HOST=logstash
       - LOGSTASH_PORT=5001
+    networks:
+      - default
+    ports:
+     - 9090:9090
 
-  ## Grafana / Prometheus
+  ## Database layer
+
+  mysql:
+    image: docker.io/mysql:8.1.0
+    container_name: mysql
+    mem_limit: 512M
+    restart: on-failure
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=petclinic
+    networks:
+      - default
+    ports:
+      - 3306:3306
+
+  ## Observability layer
 
   grafana-server:
     build: ./docker/grafana
     container_name: grafana-server
     mem_limit: 256M
+    networks:
+      - default
     ports:
     - 3000:3000
 
@@ -124,45 +164,68 @@ services:
     build: ./docker/prometheus
     container_name: prometheus-server
     mem_limit: 256M
+    networks:
+      - default
     ports:
     - 9091:9090
+
+  tracing-server:
+    image: openzipkin/zipkin
+    container_name: tracing-server
+    mem_limit: 512M
+    environment:
+    - JAVA_OPTS=-XX:+UnlockExperimentalVMOptions -Djava.security.egd=file:/dev/./urandom
+    networks:
+      - default
+    ports:
+     - 9411:9411
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.6.0
     container_name: elasticsearch
     environment:
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx1024m"
+      - "discovery.type=single-node"
+      - "xpack.security.enabled=false"
     ulimits:
       memlock:
         soft: -1
         hard: -1
     volumes:
       - esdata:/usr/share/elasticsearch/data
+    networks:
+      - default
     ports:
       - 9200:9200
-    networks:
-      - elk
 
-  logstash:
-    image: docker.elastic.co/logstash/logstash:8.6.0
-    container_name: logstash
-    depends_on:
-      - elasticsearch
+  # logstash:
+  #   image: docker.elastic.co/logstash/logstash:8.6.0
+  #   container_name: logstash
+  #   depends_on:
+  #     - elasticsearch
+  #   volumes:
+  #     - ./docker/logstash/pipeline:/usr/share/logstash/pipeline:ro
+  #     - ./docker/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+  #   networks:
+  #     - default
+  #   ports:
+  #     - 5001:5001
+
+  fluentd:
+    image: fluent/fluentd:latest
+    container_name: fluentd
     volumes:
-      - ./docker/logstash/pipeline:/usr/share/logstash/pipeline:ro
-      - ./docker/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+      - ./docker/fluentd/conf:/fluentd/etc/
     ports:
-      - 5001:5001
-    networks:
-      - elk
+      - "24224:24224"
+      - "24224:24224/udp"
 
   kibana:
     image: docker.elastic.co/kibana/kibana:8.6.0
     container_name: kibana
     depends_on:
       - elasticsearch
+    networks:
+      - default
     ports:
       - 5601:5601
-    networks:
-      - elk
