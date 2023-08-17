@@ -9,84 +9,84 @@ volumes:
     driver: local
 
 services:
-  config-server:
-    image: springcommunity/spring-petclinic-config-server
+  pc-config-server:
+    image: tc-demo/spring-petclinic-config-server
     container_name: config-server
     mem_limit: 512M
     ports:
      - 8888:8888
     environment:
       - LOGSTASH_HOST=logstash
-      - LOGSTASH_PORT=5000
+      - LOGSTASH_PORT=5001
 
-  discovery-server:
-    image: springcommunity/spring-petclinic-discovery-server
+  pc-discovery-server:
+    image: tc-demo/spring-petclinic-discovery-server
     container_name: discovery-server
     mem_limit: 512M
     depends_on:
-      - config-server
+      - pc-config-server
     entrypoint: ["./dockerize","-wait=tcp://config-server:8888","-timeout=60s","--","java", "org.springframework.boot.loader.JarLauncher"]
     ports:
      - 8761:8761
     environment:
       - LOGSTASH_HOST=logstash
-      - LOGSTASH_PORT=5000
+      - LOGSTASH_PORT=5001
 
-  customers-service:
-    image: springcommunity/spring-petclinic-customers-service
+  pc-customers-service:
+    image: tc-demo/spring-petclinic-customers-service
     container_name: customers-service
     mem_limit: 512M
     depends_on:
-     - config-server
-     - discovery-server
+     - pc-config-server
+     - pc-discovery-server
     entrypoint: ["./dockerize","-wait=tcp://discovery-server:8761","-timeout=60s","--","java", "org.springframework.boot.loader.JarLauncher"]
     ports:
     - 8081:8081
     environment:
       - LOGSTASH_HOST=logstash
-      - LOGSTASH_PORT=5000
+      - LOGSTASH_PORT=5001
 
-  visits-service:
-    image: springcommunity/spring-petclinic-visits-service
+  pc-visits-service:
+    image: tc-demo/spring-petclinic-visits-service
     container_name: visits-service
     mem_limit: 512M
     depends_on:
-     - config-server
-     - discovery-server
+     - pc-config-server
+     - pc-discovery-server
     entrypoint: ["./dockerize","-wait=tcp://discovery-server:8761","-timeout=60s","--","java", "org.springframework.boot.loader.JarLauncher"]
     ports:
      - 8082:8082
     environment:
       - LOGSTASH_HOST=logstash
-      - LOGSTASH_PORT=5000
+      - LOGSTASH_PORT=5001
 
-  vets-service:
-    image: springcommunity/spring-petclinic-vets-service
+  pc-vets-service:
+    image: tc-demo/spring-petclinic-vets-service
     container_name: vets-service
     mem_limit: 512M
     depends_on:
-     - config-server
-     - discovery-server
+     - pc-config-server
+     - pc-discovery-server
     entrypoint: ["./dockerize","-wait=tcp://discovery-server:8761","-timeout=60s","--","java", "org.springframework.boot.loader.JarLauncher"]
     ports:
      - 8083:8083
     environment:
       - LOGSTASH_HOST=logstash
-      - LOGSTASH_PORT=5000
+      - LOGSTASH_PORT=5001
 
-  api-gateway:
-    image: springcommunity/spring-petclinic-api-gateway
+  pc-api-gateway:
+    image: tc-demo/spring-petclinic-api-gateway
     container_name: api-gateway
     mem_limit: 512M
     depends_on:
-     - config-server
-     - discovery-server
+     - pc-config-server
+     - pc-discovery-server
     entrypoint: ["./dockerize","-wait=tcp://discovery-server:8761","-timeout=60s","--","java", "org.springframework.boot.loader.JarLauncher"]
     ports:
      - 8080:8080
     environment:
       - LOGSTASH_HOST=logstash
-      - LOGSTASH_PORT=5000
+      - LOGSTASH_PORT=5001
 
   tracing-server:
     image: openzipkin/zipkin
@@ -97,19 +97,19 @@ services:
     ports:
      - 9411:9411
 
-  admin-server:
-    image: springcommunity/spring-petclinic-admin-server
+  pc-admin-server:
+    image: tc-demo/spring-petclinic-admin-server
     container_name: admin-server
     mem_limit: 512M
     depends_on:
-     - config-server
-     - discovery-server
+     - pc-config-server
+     - pc-discovery-server
     entrypoint: ["./dockerize","-wait=tcp://discovery-server:8761","-timeout=60s","--","java", "org.springframework.boot.loader.JarLauncher"]
     ports:
      - 9090:9090
     environment:
       - LOGSTASH_HOST=logstash
-      - LOGSTASH_PORT=5000
+      - LOGSTASH_PORT=5001
 
   ## Grafana / Prometheus
 
@@ -153,7 +153,7 @@ services:
       - ./docker/logstash/pipeline:/usr/share/logstash/pipeline:ro
       - ./docker/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
     ports:
-      - 5000:5000
+      - 5001:5001
     networks:
       - elk
 
